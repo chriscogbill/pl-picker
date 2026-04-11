@@ -53,7 +53,9 @@ router.get('/picks/:gameweek', async (req, res) => {
     const deadlineResult = await pool.query(
       `SELECT MIN(match_date) AS deadline
        FROM pl_fixtures
-       WHERE gameweek = $1 AND season = $2 AND match_date IS NOT NULL`,
+       WHERE gameweek = $1 AND season = $2
+         AND match_date IS NOT NULL
+         AND status != 'postponed'`,
       [gameweek, season]
     );
 
@@ -152,7 +154,9 @@ router.post('/picks', requireAuth, async (req, res) => {
       const deadlineResult = await pool.query(
         `SELECT MIN(match_date) AS deadline
          FROM pl_fixtures
-         WHERE gameweek = $1 AND season = $2 AND match_date IS NOT NULL`,
+         WHERE gameweek = $1 AND season = $2
+           AND match_date IS NOT NULL
+           AND status != 'postponed'`,
         [currentGameweek, season]
       );
       const deadline = deadlineResult.rows[0]?.deadline;

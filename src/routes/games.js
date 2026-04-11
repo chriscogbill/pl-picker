@@ -310,11 +310,15 @@ router.get('/:id/history', async (req, res) => {
     const startGw = gameResult.rows[0].start_gameweek;
     const isGameAdmin = requestingUser === gameResult.rows[0].admin_email || requestingRole === 'admin';
 
-    // Get deadlines for all gameweeks that have fixtures
+    // Get deadlines for all gameweeks that have fixtures. Postponed fixtures
+    // are excluded — their match_date is often a stale pre-postponement kickoff
+    // and would falsely anchor the deadline earlier than it really was.
     const deadlinesResult = await pool.query(
       `SELECT gameweek, MIN(match_date) AS deadline
        FROM pl_fixtures
-       WHERE season = $1 AND match_date IS NOT NULL
+       WHERE season = $1
+         AND match_date IS NOT NULL
+         AND status != 'postponed'
        GROUP BY gameweek
        ORDER BY gameweek`,
       [season]

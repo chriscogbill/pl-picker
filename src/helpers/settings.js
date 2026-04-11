@@ -39,12 +39,14 @@ async function isDeadlineOverridden(pool) {
 }
 
 // Auto-detect current gameweek from fixture dates
-// Returns the earliest gameweek with unfinished matches, or null if no fixtures exist
+// Returns the earliest gameweek with unfinished matches, or null if no fixtures exist.
+// Postponed fixtures are ignored: a postponed match (often with a stale original
+// match_date) must not keep its original gameweek "active" indefinitely.
 async function autoDetectGameweek(pool, season) {
   const result = await pool.query(
     `SELECT MIN(gameweek) AS current_gw
      FROM pl_fixtures
-     WHERE season = $1 AND status != 'finished'`,
+     WHERE season = $1 AND status NOT IN ('finished', 'postponed')`,
     [season]
   );
 
