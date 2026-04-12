@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../lib/AuthContext';
 import { api } from '../../../lib/api';
@@ -14,6 +14,18 @@ export default function CreateGamePage() {
   const [creating, setCreating] = useState(false);
   const [createdGame, setCreatedGame] = useState(null);
   const [copied, setCopied] = useState(false);
+
+  // Default to the next pickable gameweek (skip current GW if its deadline has passed)
+  useEffect(() => {
+    if (!currentGameweek) return;
+    api.getDeadline(currentGameweek).then(data => {
+      if (data.isPast && currentGameweek < 38) {
+        setStartGameweek(currentGameweek + 1);
+      } else {
+        setStartGameweek(currentGameweek);
+      }
+    }).catch(() => {});
+  }, [currentGameweek]);
 
   async function handleSubmit(e) {
     e.preventDefault();
