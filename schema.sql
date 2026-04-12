@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS pl_fixtures (
     gameweek INTEGER NOT NULL,
     home_team_id INTEGER NOT NULL REFERENCES pl_teams(team_id),
     away_team_id INTEGER NOT NULL REFERENCES pl_teams(team_id),
-    match_date TIMESTAMP,
+    match_date TIMESTAMPTZ,
     home_score INTEGER,
     away_score INTEGER,
     status VARCHAR(20) DEFAULT 'scheduled',
