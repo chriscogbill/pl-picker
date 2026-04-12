@@ -9,6 +9,8 @@ export default function AdminGamesPage() {
   const { user, loading } = useAuth();
   const [games, setGames] = useState([]);
   const [loadingGames, setLoadingGames] = useState(true);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!loading) loadGames();
@@ -22,6 +24,19 @@ export default function AdminGamesPage() {
       console.error('Error loading games:', error);
     } finally {
       setLoadingGames(false);
+    }
+  }
+
+  async function handleDelete(gameId) {
+    setDeleting(true);
+    try {
+      await api.deleteGame(gameId);
+      setGames(games.filter(g => g.game_id !== gameId));
+      setConfirmDeleteId(null);
+    } catch (error) {
+      alert(error.message || 'Failed to delete game');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -64,6 +79,7 @@ export default function AdminGamesPage() {
                   <th className="text-center py-3 px-4">Status</th>
                   <th className="text-center py-3 px-4">Start GW</th>
                   <th className="text-right py-3 px-4">Created</th>
+                  <th className="text-right py-3 px-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -85,6 +101,32 @@ export default function AdminGamesPage() {
                     <td className="py-3 px-4 text-center">GW{game.start_gameweek}</td>
                     <td className="py-3 px-4 text-right text-gray-500 text-xs whitespace-nowrap">
                       {new Date(game.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      {confirmDeleteId === game.game_id ? (
+                        <span className="space-x-2">
+                          <button
+                            onClick={() => handleDelete(game.game_id)}
+                            disabled={deleting}
+                            className="text-xs font-medium text-danger-600 hover:text-danger-800 disabled:text-gray-400"
+                          >
+                            {deleting ? 'Deleting...' : 'Confirm'}
+                          </button>
+                          <button
+                            onClick={() => setConfirmDeleteId(null)}
+                            className="text-xs font-medium text-gray-500 hover:text-gray-700"
+                          >
+                            Cancel
+                          </button>
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmDeleteId(game.game_id)}
+                          className="text-xs font-medium text-danger-600 hover:text-danger-800"
+                        >
+                          Delete
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
