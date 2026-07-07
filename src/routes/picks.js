@@ -42,7 +42,7 @@ router.get('/my-picks', requireAuth, async (req, res) => {
 });
 
 // GET /api/games/:id/picks/:gameweek - Get all picks for a gameweek
-router.get('/picks/:gameweek', async (req, res) => {
+router.get('/picks/:gameweek', requireAuth, async (req, res) => {
   try {
     const gameId = req.params.id;
     const { gameweek } = req.params;
