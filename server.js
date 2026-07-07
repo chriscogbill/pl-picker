@@ -72,7 +72,13 @@ app.use(session({
     tableName: 'session',
     createTableIfMissing: true
   }),
-  secret: process.env.SESSION_SECRET || 'cogs-shared-session-secret-change-in-production',
+secret: process.env.SESSION_SECRET || (() => {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('SESSION_SECRET must be set in production (refusing the shared insecure fallback)');
+    }
+    console.warn('[session] SESSION_SECRET unset — using an ephemeral dev secret; sessions will not persist or share');
+    return require('crypto').randomBytes(32).toString('hex');
+  })(),
   resave: false,
   saveUninitialized: false,
   cookie: cookieConfig
