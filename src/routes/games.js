@@ -42,6 +42,10 @@ router.get('/', async (req, res) => {
         game.user_status = memberMap[game.game_id] || null;
         game.is_member = !!memberMap[game.game_id];
       });
+    } else {
+      // Anonymous callers (the logged-out landing fetches this list to
+      // show game names/counts): never leak admin email addresses.
+      result.rows.forEach(game => { delete game.admin_email; });
     }
 
     res.json({ success: true, games: result.rows });
@@ -52,7 +56,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/games/:id - Get game detail with players
-router.get('/:id', async (req, res) => {
+router.get('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -238,7 +242,7 @@ router.post('/:id/start', requireAuth, requireGameAdmin(), async (req, res) => {
 });
 
 // GET /api/games/:id/standings - Get game standings
-router.get('/:id/standings', async (req, res) => {
+router.get('/:id/standings', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -279,7 +283,7 @@ router.get('/:id/standings', async (req, res) => {
 });
 
 // GET /api/games/:id/history - Get pick history per gameweek (deadline-aware)
-router.get('/:id/history', async (req, res) => {
+router.get('/:id/history', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const season = await getCurrentSeason(pool);
