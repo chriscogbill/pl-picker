@@ -1,5 +1,5 @@
 {
-  "name": "prem-picker-api",
+  "name": "pl-picker-api",
   "version": "1.0.0",
   "description": "Prem Picker Last Man Standing API",
   "main": "server.js",
