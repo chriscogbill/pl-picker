@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+body {
+  font-family: var(--font-geist-mono), "SF Mono", "Fira Code", "JetBrains Mono",
+    "Cascadia Code", ui-monospace, monospace;
+}
+
 @theme {
   /* Primary brand color (PL purple) */
   --color-primary-50: #f5f0ff;
