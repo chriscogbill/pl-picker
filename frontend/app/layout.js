@@ -1,7 +1,15 @@
 import './globals.css';
+import { Geist_Mono } from 'next/font/google';
 import Script from 'next/script';
 import Navigation from '../components/Navigation';
 import { AuthProvider } from '../lib/AuthContext';
+
+// Monospace body: the single cogs voice across the estate (adopted
+// 2026-08-13 after the fantasy-nfl trial; see the cogs-brand skill).
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  variable: '--font-geist-mono',
+});
 
 export const metadata = {
   title: 'PL Picker',
@@ -10,7 +18,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" className={geistMono.variable}>
       <body>
         {process.env.NEXT_PUBLIC_ADSENSE_PUB_ID && (
           <Script
