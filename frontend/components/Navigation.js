@@ -94,7 +94,7 @@ export default function Navigation() {
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
                 <Link href="/">
-                  <img src="/logo.svg" alt="PL Picker" className="h-8" />
+                  <img src="/cogs-pl-picker.svg" alt="cogs.pl.picker" className="h-8" />
                 </Link>
               </div>
 
