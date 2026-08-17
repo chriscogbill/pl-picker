@@ -38,7 +38,7 @@ export default function HomePage() {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <img src="/logo.svg" alt="PL Picker" className="h-16 mx-auto mb-2" />
+        <img src="/cogs-pl-picker.svg" alt="cogs.pl.picker" className="h-12 mx-auto mb-2" />
         <p className="text-lg text-gray-600">Premier League Last Man Standing</p>
       </div>
 
