@@ -12,6 +12,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
+  metadataBase: new URL('https://plpicker.cogs.tech'),
   title: 'PL Picker',
   description: 'Premier League Last Man Standing',
 };
