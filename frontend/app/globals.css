@@ -121,3 +121,11 @@ body {
   background-color: #f9fafb;
   color: #111827;
 }
+
+/* iOS Safari zooms the page in when a focused form field's text is under
+   16px, which breaks the app feel on phones and home-screen installs.
+   !important so it beats utility classes (text-sm etc.) and component
+   rules; pinch-zoom is left alone. */
+@media (max-width: 767px), (pointer: coarse) {
+  input, textarea, select { font-size: 16px !important; }
+}
