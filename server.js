@@ -72,7 +72,7 @@ app.use(session({
     tableName: 'session',
     createTableIfMissing: true
   }),
-secret: process.env.SESSION_SECRET || (() => {
+  secret: process.env.SESSION_SECRET || (() => {
     if (process.env.NODE_ENV === 'production') {
       throw new Error('SESSION_SECRET must be set in production (refusing the shared insecure fallback)');
     }
