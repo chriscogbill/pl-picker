@@ -33,8 +33,8 @@ export default function AdminUsersPage() {
     setResetError('');
     setResetSuccess('');
 
-    if (!newPassword || newPassword.length < 6) {
-      setResetError('Password must be at least 6 characters');
+    if (!newPassword || newPassword.length < 8) {
+      setResetError('Password must be at least 8 characters');
       return;
     }
 
