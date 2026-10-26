@@ -117,33 +117,22 @@ app.use((req, res, next) => {
 app.get('/health', async (req, res) => {
   try {
     await pool.query('SELECT NOW()');
-    let authDbStatus = 'unknown';
-    let sessionCount = 0;
+    let authDatabase = 'connected';
     try {
-      const sessResult = await authPool.query('SELECT COUNT(*) as cnt FROM session');
-      sessionCount = sessResult.rows[0].cnt;
-      authDbStatus = 'connected';
+      await authPool.query('SELECT 1');
     } catch (authErr) {
-      authDbStatus = `error: ${authErr.message}`;
+      console.error('Health check: auth database error:', authErr.message);
+      authDatabase = 'error';
     }
     res.json({
-      status: 'healthy',
+      status: authDatabase === 'connected' ? 'healthy' : 'degraded',
       database: 'connected',
-      authDatabase: authDbStatus,
-      sessionCount,
-      sessionInfo: {
-        hasSessionId: !!req.sessionID,
-        hasUserId: !!req.session?.userId,
-        cookieHeader: req.headers.cookie ? 'present' : 'missing'
-      },
+      authDatabase,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    res.status(503).json({
-      status: 'unhealthy',
-      database: 'disconnected',
-      error: error.message
-    });
+    console.error('Health check: database error:', error.message);
+    res.status(503).json({ status: 'unhealthy', database: 'error', timestamp: new Date().toISOString() });
   }
 });
 
@@ -263,8 +252,8 @@ app.post('/api/auth/change-password', async (req, res) => {
     if (!currentPassword || !newPassword) {
       return res.status(400).json({ success: false, error: 'Current and new passwords are required' });
     }
-    if (newPassword.length < 6) {
-      return res.status(400).json({ success: false, error: 'New password must be at least 6 characters' });
+    if (newPassword.length < 8) {
+      return res.status(400).json({ success: false, error: 'New password must be at least 8 characters' });
     }
 
     // Get current password hash
@@ -321,8 +310,8 @@ app.post('/api/auth/reset-password', async (req, res) => {
     if (!token || !newPassword) {
       return res.status(400).json({ success: false, error: 'Token and new password are required' });
     }
-    if (newPassword.length < 6) {
-      return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
+    if (newPassword.length < 8) {
+      return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
     }
 
     // Hash the token to compare with stored hash
@@ -382,8 +371,8 @@ app.post('/api/auth/admin-reset-password', async (req, res) => {
     if (!userId || !newPassword) {
       return res.status(400).json({ success: false, error: 'User ID and new password are required' });
     }
-    if (newPassword.length < 6) {
-      return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
+    if (newPassword.length < 8) {
+      return res.status(400).json({ success: false, error: 'Password must be at least 8 characters' });
     }
 
     // Verify user exists
