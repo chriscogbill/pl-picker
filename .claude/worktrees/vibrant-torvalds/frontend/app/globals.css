@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+@theme {
+  /* Primary brand color (PL purple) */
+  --color-primary-50: #f5f0ff;
+  --color-primary-100: #ede5ff;
+  --color-primary-200: #dcceff;
+  --color-primary-300: #c3a6ff;
+  --color-primary-400: #a573ff;
+  --color-primary-500: #8b46ff;
+  --color-primary-600: #3d0f5b;
+  --color-primary-700: #300a49;
+  --color-primary-800: #240837;
+  --color-primary-900: #190525;
+
+  /* Positive color (green) - alive, wins */
+  --color-positive-50: #f2faf4;
+  --color-positive-100: #dff3e6;
+  --color-positive-200: #c0e6ce;
+  --color-positive-300: #91d2a8;
+  --color-positive-400: #5bb87d;
+  --color-positive-500: #369b5a;
+  --color-positive-600: #288249;
+  --color-positive-700: #22693c;
+  --color-positive-800: #1d5432;
+  --color-positive-900: #174328;
+
+  /* Link color */
+  --color-link-50: #f0f5fa;
+  --color-link-100: #dae4f0;
+  --color-link-200: #b8cce0;
+  --color-link-300: #8fadc9;
+  --color-link-400: #6a91b5;
+  --color-link-500: #4d78a0;
+  --color-link-600: #3a6490;
+  --color-link-700: #2d5078;
+  --color-link-800: #234060;
+  --color-link-900: #1a3048;
+
+  /* Danger/error color (red) - eliminated, losses */
+  --color-danger-50: #fef3f3;
+  --color-danger-100: #fce4e4;
+  --color-danger-200: #f9caca;
+  --color-danger-300: #f3a1a1;
+  --color-danger-400: #e87070;
+  --color-danger-500: #d54848;
+  --color-danger-600: #b83030;
+  --color-danger-700: #9a2626;
+  --color-danger-800: #7f2121;
+  --color-danger-900: #6a1f1f;
+
+  /* Warning/draw color (amber) */
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  --color-warning-800: #92400e;
+  --color-warning-900: #78350f;
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer;
+  }
+
+  .btn-primary:hover {
+    @apply bg-primary-700;
+  }
+
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-800 font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer;
+  }
+
+  .btn-secondary:hover {
+    @apply bg-gray-300;
+  }
+
+  .btn-success {
+    @apply bg-positive-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer;
+  }
+
+  .btn-success:hover {
+    @apply bg-positive-700;
+  }
+
+  .btn-danger {
+    @apply bg-danger-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer;
+  }
+
+  .btn-danger:hover {
+    @apply bg-danger-700;
+  }
+
+  .card {
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+    padding: 1.5rem;
+    transition: box-shadow 0.2s;
+  }
+
+  .card:hover {
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  }
+
+  .text-link {
+    @apply text-link-600 hover:text-link-700 hover:underline;
+  }
+}
+
+body {
+  background-color: #f9fafb;
+  color: #111827;
+}

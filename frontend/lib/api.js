@@ -50,19 +50,7 @@ class ApiClient {
     return this.request('/api/auth/me');
   }
 
-  async checkEmail(email) {
-    return this.request('/api/auth/check-email', {
-      method: 'POST',
-      body: JSON.stringify({ email }),
-    });
-  }
 
-  async setupPassword(email, password) {
-    return this.request('/api/auth/setup-password', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
-  }
 
   async changePassword(currentPassword, newPassword) {
     return this.request('/api/auth/change-password', {

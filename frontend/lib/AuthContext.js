@@ -62,11 +62,6 @@ export function AuthProvider({ children }) {
     return response;
   }
 
-  async function setupPassword(email, password) {
-    const response = await api.setupPassword(email, password);
-    setUser(response.user);
-    return response;
-  }
 
   async function changePassword(currentPassword, newPassword) {
     return api.changePassword(currentPassword, newPassword);
@@ -88,7 +83,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{
-      user, loading, login, register, setupPassword, changePassword, logout,
+      user, loading, login, register, changePassword, logout,
       currentSeason, currentGameweek, refreshGameweek
     }}>
       {children}
