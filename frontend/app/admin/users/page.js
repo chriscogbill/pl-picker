@@ -109,7 +109,7 @@ export default function AdminUsersPage() {
                           onChange={(e) => setNewPassword(e.target.value)}
                           placeholder="New password"
                           className="w-32 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                          minLength={6}
+                          minLength={8}
                         />
                         <button
                           onClick={() => handleResetPassword(u.user_id)}
