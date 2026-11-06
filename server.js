@@ -152,69 +152,11 @@ app.get('/', (req, res) => {
 });
 
 // ============================================
-// Auth proxy routes
-// Forwards auth requests to cogs-auth server-to-server,
-// then sets the session locally so the cookie comes from
-// this origin (api-plpicker.cogs.tech) — avoids cross-origin cookie issues.
+// Auth routes
+// Login, register and forgot-password go straight from the browser to cogs-auth
+// (auth.cogs.tech), not through this server. cogs-auth rate-limits per client IP,
+// so proxying them would put every pl-picker user in one bucket: this server's.
 // ============================================
-const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:3002';
-
-app.post('/api/auth/login', async (req, res) => {
-  try {
-    const authResponse = await fetch(`${AUTH_SERVICE_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req.body)
-    });
-    const data = await authResponse.json();
-
-    if (authResponse.ok && data.success && data.user) {
-      req.session.userId = data.user.userId;
-      req.session.email = data.user.email;
-      req.session.username = data.user.username;
-      req.session.role = data.user.role;
-
-      // Explicitly save session to ensure Set-Cookie header is sent
-      await new Promise((resolve, reject) => {
-        req.session.save((err) => err ? reject(err) : resolve());
-      });
-    }
-
-    res.status(authResponse.status).json(data);
-  } catch (error) {
-    console.error('Auth proxy error (login):', error);
-    res.status(502).json({ success: false, error: 'Auth service unavailable' });
-  }
-});
-
-app.post('/api/auth/register', async (req, res) => {
-  try {
-    const authResponse = await fetch(`${AUTH_SERVICE_URL}/api/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(req.body)
-    });
-    const data = await authResponse.json();
-
-    if (authResponse.ok && data.success && data.user) {
-      req.session.userId = data.user.userId;
-      req.session.email = data.user.email;
-      req.session.username = data.user.username;
-      req.session.role = data.user.role;
-
-      // Explicitly save session to ensure Set-Cookie header is sent
-      await new Promise((resolve, reject) => {
-        req.session.save((err) => err ? reject(err) : resolve());
-      });
-    }
-
-    res.status(authResponse.status).json(data);
-  } catch (error) {
-    console.error('Auth proxy error (register):', error);
-    res.status(502).json({ success: false, error: 'Auth service unavailable' });
-  }
-});
-
 app.get('/api/auth/me', (req, res) => {
   if (req.session?.userId) {
     res.json({
@@ -282,24 +224,6 @@ app.post('/api/auth/change-password', async (req, res) => {
   } catch (error) {
     console.error('Error changing password:', error);
     res.status(500).json({ success: false, error: 'Password change failed' });
-  }
-});
-
-// POST /api/auth/forgot-password — Proxy to cogs-auth (unauthenticated, needs email sending)
-// Injects this app's frontend URL so cogs-auth knows where to link the reset email back to
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3004';
-app.post('/api/auth/forgot-password', async (req, res) => {
-  try {
-    const authResponse = await fetch(`${AUTH_SERVICE_URL}/api/auth/forgot-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...req.body, redirectUrl: FRONTEND_URL })
-    });
-    const data = await authResponse.json();
-    res.status(authResponse.status).json(data);
-  } catch (error) {
-    console.error('Auth proxy error (forgot-password):', error);
-    res.status(502).json({ success: false, error: 'Auth service unavailable' });
   }
 });
 

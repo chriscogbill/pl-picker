@@ -50,12 +50,6 @@ export function AuthProvider({ children }) {
     }
   }
 
-  async function login(email, password) {
-    const response = await api.login(email, password);
-    setUser(response.user);
-    return response;
-  }
-
   async function register(email, username, password) {
     const response = await api.register(email, username, password);
     setUser(response.user);
@@ -83,7 +77,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider value={{
-      user, loading, login, register, changePassword, logout,
+      user, loading, register, changePassword, logout,
       currentSeason, currentGameweek, refreshGameweek
     }}>
       {children}
