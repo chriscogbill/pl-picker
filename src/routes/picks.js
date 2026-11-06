@@ -101,10 +101,13 @@ router.get('/picks/:gameweek', requireAuth, async (req, res) => {
 router.post('/picks', requireAuth, async (req, res) => {
   try {
     const gameId = req.params.id;
-    const { plTeamId } = req.body;
 
-    if (!plTeamId) {
-      return res.status(400).json({ success: false, error: 'plTeamId is required' });
+    // Normalise to an integer up front. The used-team rule below compares with
+    // strict equality against the integers pg returns, so a string "5" would
+    // slip past it while Postgres happily casts it for the fixture check + upsert.
+    const plTeamId = Number(req.body.plTeamId);
+    if (!Number.isInteger(plTeamId) || plTeamId <= 0 || plTeamId > 2147483647) {
+      return res.status(400).json({ success: false, error: 'A valid plTeamId is required' });
     }
 
     const season = await getCurrentSeason(pool);
