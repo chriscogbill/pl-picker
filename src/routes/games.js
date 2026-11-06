@@ -6,6 +6,27 @@ const { getCurrentSeason, getCurrentGameweek, getGameweekOverride, isDeadlineOve
 const { ensureUserExists } = require('../helpers/userManager');
 const picksRouter = require('./picks');
 
+// Games auto-start as 'active' on creation, so 'open' alone can't decide who may
+// join. Players can join until the first kick-off of the game's start gameweek,
+// the same deadline that closes that gameweek's picks. After that they would have
+// missed a pick, so only the game admin can add them.
+async function isAcceptingPlayers(game) {
+  if (game.status === 'open') return true;
+  if (game.status !== 'active') return false;
+  if (await isDeadlineOverridden(pool)) return true;
+
+  const result = await pool.query(
+    `SELECT MIN(match_date) AS deadline
+     FROM pl_fixtures
+     WHERE gameweek = $1 AND season = $2
+       AND match_date IS NOT NULL
+       AND status != 'postponed'`,
+    [game.start_gameweek, game.season]
+  );
+  const deadline = result.rows[0]?.deadline;
+  return !deadline || new Date(deadline) > new Date();
+}
+
 // Mount picks routes under /api/games/:id/
 router.use('/:id', picksRouter);
 
@@ -97,7 +118,8 @@ router.get('/:id', requireAuth, async (req, res) => {
       success: true,
       game: {
         ...game,
-        invite_code: isAdmin ? game.invite_code : undefined
+        invite_code: isAdmin ? game.invite_code : undefined,
+        accepting_players: isAdmin ? await isAcceptingPlayers(game) : undefined
       },
       players: playersResult.rows
     });
@@ -169,8 +191,8 @@ router.post('/join', requireAuth, async (req, res) => {
 
     const game = gameResult.rows[0];
 
-    if (game.status !== 'open') {
-      return res.status(400).json({ success: false, error: 'This game is no longer accepting players' });
+    if (!(await isAcceptingPlayers(game))) {
+      return res.status(400).json({ success: false, error: 'This game has started and is no longer accepting players. Ask the game admin to add you.' });
     }
 
     // Check if already a member
@@ -271,9 +293,13 @@ router.get('/:id/standings', requireAuth, async (req, res) => {
       [id]
     );
 
+    // Same rule as GET /:id: the invite code is only for the game admin
+    const game = gameResult.rows[0];
+    const isAdmin = req.session?.email === game.admin_email || req.session?.role === 'admin';
+
     res.json({
       success: true,
-      game: gameResult.rows[0],
+      game: { ...game, invite_code: isAdmin ? game.invite_code : undefined },
       standings: playersResult.rows
     });
   } catch (error) {

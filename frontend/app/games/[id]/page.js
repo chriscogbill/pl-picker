@@ -358,7 +358,7 @@ function AdminPanel({ game, id, players, copied, copyInviteCode, processing, upd
         </div>
       </div>
 
-      {game.invite_code && (
+      {game.invite_code && game.accepting_players && (
         <div className="mb-4">
           <span className="text-sm text-gray-600">Invite Code: </span>
           <span className="font-mono font-bold text-primary-600">{game.invite_code}</span>
