@@ -33,3 +33,6 @@ build/
 # Temporary files
 tmp/
 temp/
+
+# Claude Code local state and worktrees
+.claude/
