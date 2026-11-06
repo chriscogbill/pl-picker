@@ -1,8 +1,12 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003';
+const AUTH_LOGIN_URL = process.env.NEXT_PUBLIC_AUTH_LOGIN_URL || 'https://auth.cogs.tech/login';
+// Register and forgot-password call cogs-auth directly so its per-IP rate limits
+// see the real client, not this app's API server.
+const AUTH_BASE_URL = new URL(AUTH_LOGIN_URL).origin;
 
 class ApiClient {
-  async request(endpoint, options = {}) {
-    const url = `${API_BASE_URL}${endpoint}`;
+  async request(endpoint, options = {}, baseUrl = API_BASE_URL) {
+    const url = `${baseUrl}${endpoint}`;
 
     try {
       const response = await fetch(url, {
@@ -32,14 +36,7 @@ class ApiClient {
     return this.request('/api/auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, username, password }),
-    });
-  }
-
-  async login(email, password) {
-    return this.request('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
+    }, AUTH_BASE_URL);
   }
 
   async logout() {
@@ -62,8 +59,8 @@ class ApiClient {
   async forgotPassword(email) {
     return this.request('/api/auth/forgot-password', {
       method: 'POST',
-      body: JSON.stringify({ email }),
-    });
+      body: JSON.stringify({ email, redirectUrl: window.location.origin }),
+    }, AUTH_BASE_URL);
   }
 
   async resetPassword(token, newPassword) {
