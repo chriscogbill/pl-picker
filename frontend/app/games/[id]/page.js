@@ -113,8 +113,8 @@ export default function GameDetailPage() {
     return <div className="card text-center"><p className="text-gray-600">Game not found.</p></div>;
   }
 
-  const isGameAdmin = user && (user.email === game.admin_email || user.role === 'admin');
-  const myPlayer = players.find(p => p.user_email === user?.email);
+  const isGameAdmin = !!game.viewer_is_game_admin;
+  const myPlayer = players.find(p => p.is_me);
 
   // Build the list of gameweeks that have activity (picks or are in range)
   const historyGws = Object.keys(history).map(Number);
@@ -124,15 +124,16 @@ export default function GameDetailPage() {
     gameweeks.push(gw);
   }
 
-  // Build a lookup: playerEmail -> gameweek -> pick info
+  // Build a lookup: player_id -> gameweek -> pick info (emails are only
+  // sent to the game admin, so key on player_id)
   const pickLookup = {};
-  players.forEach(p => { pickLookup[p.user_email] = {}; });
+  players.forEach(p => { pickLookup[p.player_id] = {}; });
 
   Object.entries(history).forEach(([gw, gwData]) => {
     const gwNum = parseInt(gw);
     gwData.picks.forEach(pick => {
-      if (!pickLookup[pick.user_email]) pickLookup[pick.user_email] = {};
-      pickLookup[pick.user_email][gwNum] = pick;
+      if (!pickLookup[pick.player_id]) pickLookup[pick.player_id] = {};
+      pickLookup[pick.player_id][gwNum] = pick;
     });
   });
 
@@ -148,15 +149,15 @@ export default function GameDetailPage() {
     if (a.status === 'eliminated' && b.status === 'eliminated') {
       const gwDiff = (b.eliminated_gameweek || 0) - (a.eliminated_gameweek || 0);
       if (gwDiff !== 0) return gwDiff;
-      const aWins = Object.values(pickLookup[a.user_email] || {}).filter(p => p.result === 'win').length;
-      const bWins = Object.values(pickLookup[b.user_email] || {}).filter(p => p.result === 'win').length;
+      const aWins = Object.values(pickLookup[a.player_id] || {}).filter(p => p.result === 'win').length;
+      const bWins = Object.values(pickLookup[b.player_id] || {}).filter(p => p.result === 'win').length;
       if (aWins !== bWins) return bWins - aWins;
     }
 
     // Among alive players, sort by number of wins desc
     if (a.status === 'alive' && b.status === 'alive') {
-      const aWins = Object.values(pickLookup[a.user_email] || {}).filter(p => p.result === 'win').length;
-      const bWins = Object.values(pickLookup[b.user_email] || {}).filter(p => p.result === 'win').length;
+      const aWins = Object.values(pickLookup[a.player_id] || {}).filter(p => p.result === 'win').length;
+      const bWins = Object.values(pickLookup[b.player_id] || {}).filter(p => p.result === 'win').length;
       if (aWins !== bWins) return bWins - aWins;
     }
 
@@ -236,15 +237,15 @@ export default function GameDetailPage() {
                         <span className={isEliminated ? 'line-through' : ''}>
                           {player.username}
                         </span>
-                        {player.user_email === user?.email && (
+                        {player.is_me && (
                           <span className="text-xs text-gray-400 ml-1">(you)</span>
                         )}
                         {isWinner && <span className="ml-1 text-xs">🏆</span>}
                       </td>
                       {gameweeks.map(gw => {
-                        const pick = pickLookup[player.user_email]?.[gw];
+                        const pick = pickLookup[player.player_id]?.[gw];
                         const gwData = history[gw];
-                        const isCurrentUser = player.user_email === user?.email;
+                        const isCurrentUser = player.is_me;
 
                         return (
                           <PickCell

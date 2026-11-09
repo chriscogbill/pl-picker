@@ -192,7 +192,7 @@ export default function ManagePage() {
     return <div className="card text-center"><p className="text-gray-600">Game not found.</p></div>;
   }
 
-  const isGameAdmin = user && (user.email === game.admin_email || user.role === 'admin');
+  const isGameAdmin = !!game.viewer_is_game_admin;
   if (!isGameAdmin) {
     return <div className="card text-center"><p className="text-gray-600">Only the game admin can access this page.</p></div>;
   }
