@@ -183,6 +183,15 @@ app.post('/api/auth/logout', (req, res) => {
   });
 });
 
+// Delete a user's sessions from the shared cogs-auth store (connect-pg-simple's
+// `session` table, shared by every cogs.tech app), optionally keeping one.
+async function endUserSessions(userId, keepSid) {
+  await authPool.query(
+    `DELETE FROM session WHERE sess->>'userId' = $1 AND ($2::text IS NULL OR sid <> $2)`,
+    [String(userId), keepSid || null]
+  );
+}
+
 // POST /api/auth/change-password — Change own password (authenticated)
 app.post('/api/auth/change-password', async (req, res) => {
   try {
@@ -219,6 +228,8 @@ app.post('/api/auth/change-password', async (req, res) => {
       'UPDATE users SET password_hash = $1 WHERE user_id = $2',
       [newHash, req.session.userId]
     );
+    // Sign the user out everywhere else (all cogs.tech apps share this store)
+    await endUserSessions(req.session.userId, req.sessionID);
 
     res.json({ success: true, message: 'Password changed successfully' });
   } catch (error) {
@@ -258,6 +269,8 @@ app.post('/api/auth/reset-password', async (req, res) => {
       'UPDATE users SET password_hash = $1, password_reset_token = NULL, password_reset_expires = NULL WHERE user_id = $2',
       [newHash, user.user_id]
     );
+    // A reset usually means the old password may be known: end every session
+    await endUserSessions(user.user_id);
 
     res.json({ success: true, message: 'Password reset successfully' });
   } catch (error) {

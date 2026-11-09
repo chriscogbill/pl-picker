@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
+const { internalError } = require('../helpers/http');
 const { requireAdmin } = require('../middleware/requireAuth');
 const { getCurrentSeason, autoDetectGameweek, updateSetting, isDeadlineOverridden } = require('../helpers/settings');
 
@@ -18,7 +19,7 @@ router.get('/teams', async (req, res) => {
     res.json({ success: true, teams: result.rows });
   } catch (error) {
     console.error('Error fetching teams:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -44,7 +45,7 @@ router.get('/:gameweek', async (req, res) => {
     res.json({ success: true, fixtures: result.rows });
   } catch (error) {
     console.error('Error fetching fixtures:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -73,7 +74,7 @@ router.get('/:gameweek/deadline', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching deadline:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -207,7 +208,7 @@ router.post('/import', requireAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('Error importing fixtures:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -255,7 +256,7 @@ router.post('/update-results', requireAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating results:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 

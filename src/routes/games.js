@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
+const { internalError } = require('../helpers/http');
 const { requireAuth, requireAdmin, requireGameAdmin } = require('../middleware/requireAuth');
 const { getCurrentSeason, getCurrentGameweek, getGameweekOverride, isDeadlineOverridden } = require('../helpers/settings');
 const { ensureUserExists } = require('../helpers/userManager');
@@ -76,7 +77,7 @@ router.get('/', async (req, res) => {
     res.json({ success: true, games: result.rows });
   } catch (error) {
     console.error('Error fetching games:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -128,7 +129,7 @@ router.get('/:id', requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching game:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -170,7 +171,7 @@ router.post('/', requireAuth, async (req, res) => {
       return res.status(409).json({ success: false, error: 'Invite code conflict, please try again' });
     }
     console.error('Error creating game:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -221,7 +222,7 @@ router.post('/join', requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Error joining game:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -262,7 +263,7 @@ router.post('/:id/start', requireAuth, requireGameAdmin(), async (req, res) => {
     });
   } catch (error) {
     console.error('Error starting game:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -306,7 +307,7 @@ router.get('/:id/standings', requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching standings:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -424,7 +425,7 @@ router.get('/:id/history', requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching game history:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -454,7 +455,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Error deleting game:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -468,10 +469,13 @@ router.post('/:id/add-player', requireAuth, requireGameAdmin(), async (req, res)
       return res.status(400).json({ success: false, error: 'email is required' });
     }
 
+    // Emails are stored lowercased, so compare lowercased too
+    const normEmail = email.trim().toLowerCase();
+
     // Check if already a member
     const existing = await pool.query(
       'SELECT * FROM game_players WHERE game_id = $1 AND user_email = $2',
-      [id, email]
+      [id, normEmail]
     );
     if (existing.rows.length > 0) {
       return res.status(409).json({ success: false, error: 'Player is already in this game' });
@@ -479,18 +483,18 @@ router.post('/:id/add-player', requireAuth, requireGameAdmin(), async (req, res)
 
     // Ensure user account exists (auto-creates if needed)
     const authPool = req.app.locals.authPool;
-    const userInfo = await ensureUserExists(authPool, pool, email, username);
+    const userInfo = await ensureUserExists(authPool, pool, normEmail, username);
     const playerUsername = username || userInfo.username;
 
     const result = await pool.query(
       `INSERT INTO game_players (game_id, user_email, username)
        VALUES ($1, $2, $3)
        RETURNING *`,
-      [id, email.trim().toLowerCase(), playerUsername]
+      [id, normEmail, playerUsername]
     );
 
     const msg = userInfo.created
-      ? `Added ${playerUsername} to the game (account created — they'll need to set a password)`
+      ? `Added ${playerUsername} to the game (account created — they can set a password with "Forgot password")`
       : `Added ${playerUsername} to the game`;
 
     res.status(201).json({
@@ -500,7 +504,7 @@ router.post('/:id/add-player', requireAuth, requireGameAdmin(), async (req, res)
     });
   } catch (error) {
     console.error('Error adding player:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -588,7 +592,7 @@ router.post('/:id/import-pick', requireAuth, requireGameAdmin(), async (req, res
     });
   } catch (error) {
     console.error('Error importing pick:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -638,7 +642,9 @@ router.post('/:id/bulk-import', requireAuth, requireGameAdmin(), async (req, res
       if (playerResult.rows.length === 0) {
         // Ensure user account exists (auto-creates if needed)
         const authPool = req.app.locals.authPool;
-        const userInfo = await ensureUserExists(authPool, pool, trimmedEmail, playerUsername);
+        // The cogs-auth account lives in another database, so it can't join this
+        // transaction; the local profile row uses `client` so a rollback undoes it.
+        const userInfo = await ensureUserExists(authPool, client, trimmedEmail, playerUsername);
         if (!playerUsername) {
           playerUsername = userInfo.username;
         }
@@ -714,7 +720,7 @@ router.post('/:id/bulk-import', requireAuth, requireGameAdmin(), async (req, res
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error in bulk import:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   } finally {
     client.release();
   }
@@ -765,7 +771,7 @@ router.post('/:id/set-player-status', requireAuth, requireGameAdmin(), async (re
     });
   } catch (error) {
     console.error('Error updating player status:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -800,7 +806,7 @@ router.post('/:id/transfer-admin', requireAuth, requireGameAdmin(), async (req, 
     });
   } catch (error) {
     console.error('Error transferring admin:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
