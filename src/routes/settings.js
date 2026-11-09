@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/connection');
+const { internalError } = require('../helpers/http');
 const { requireAdmin } = require('../middleware/requireAuth');
 const { getCurrentSeason, autoDetectGameweek, getGameweekOverride, isDeadlineOverridden } = require('../helpers/settings');
 
@@ -47,7 +48,7 @@ router.get('/', async (req, res) => {
     res.json({ success: true, settings });
   } catch (error) {
     console.error('Error fetching settings:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -92,7 +93,7 @@ router.get('/:key', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching setting:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -128,7 +129,7 @@ router.put('/:key', requireAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating setting:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router({ mergeParams: true });
 const pool = require('../db/connection');
+const { internalError } = require('../helpers/http');
 const { requireAuth, requireAdmin } = require('../middleware/requireAuth');
 const { getCurrentSeason, getCurrentGameweek, getGameweekOverride, isDeadlineOverridden, autoDetectGameweek } = require('../helpers/settings');
 const { redactPlayerEmails } = require('../helpers/privacy');
@@ -38,7 +39,7 @@ router.get('/my-picks', requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching my picks:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -96,7 +97,7 @@ router.get('/picks/:gameweek', requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching gameweek picks:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -235,7 +236,7 @@ router.post('/picks', requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error('Error submitting pick:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -269,7 +270,7 @@ router.delete('/picks/:gameweek/:playerEmail', requireAdmin, async (req, res) =>
     });
   } catch (error) {
     console.error('Error deleting pick:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   }
 });
 
@@ -444,7 +445,7 @@ router.post('/process-results', requireAdmin, async (req, res) => {
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error processing results:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   } finally {
     client.release();
   }
@@ -636,7 +637,7 @@ router.post('/update-standings', requireAdmin, async (req, res) => {
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('Error updating standings:', error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json(internalError(error));
   } finally {
     client.release();
   }
