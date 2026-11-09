@@ -5,6 +5,7 @@ const { requireAuth, requireAdmin, requireGameAdmin } = require('../middleware/r
 const { getCurrentSeason, getCurrentGameweek, getGameweekOverride, isDeadlineOverridden } = require('../helpers/settings');
 const { ensureUserExists } = require('../helpers/userManager');
 const picksRouter = require('./picks');
+const { viewerIsGameAdmin, redactPlayerEmails, redactGame } = require('../helpers/privacy');
 
 // Games auto-start as 'active' on creation, so 'open' alone can't decide who may
 // join. Players can join until the first kick-off of the game's start gameweek,
@@ -62,6 +63,9 @@ router.get('/', async (req, res) => {
       result.rows.forEach(game => {
         game.user_status = memberMap[game.game_id] || null;
         game.is_member = !!memberMap[game.game_id];
+        game.viewer_is_game_admin = viewerIsGameAdmin(req, game);
+        // Admin emails are only for that admin and site admins
+        if (!game.viewer_is_game_admin) delete game.admin_email;
       });
     } else {
       // Anonymous callers (the logged-out landing fetches this list to
@@ -111,17 +115,16 @@ router.get('/:id', requireAuth, async (req, res) => {
       [id]
     );
 
-    // Only include invite_code if the user is the game admin
-    const isAdmin = req.session?.email === game.admin_email || req.session?.role === 'admin';
+    // invite_code, admin emails and player emails are only for the game admin
+    const isAdmin = viewerIsGameAdmin(req, game);
 
     res.json({
       success: true,
       game: {
-        ...game,
-        invite_code: isAdmin ? game.invite_code : undefined,
+        ...redactGame(req, game),
         accepting_players: isAdmin ? await isAcceptingPlayers(game) : undefined
       },
-      players: playersResult.rows
+      players: redactPlayerEmails(req, game, playersResult.rows)
     });
   } catch (error) {
     console.error('Error fetching game:', error);
@@ -293,14 +296,13 @@ router.get('/:id/standings', requireAuth, async (req, res) => {
       [id]
     );
 
-    // Same rule as GET /:id: the invite code is only for the game admin
+    // Same rule as GET /:id: invite code and emails are only for the game admin
     const game = gameResult.rows[0];
-    const isAdmin = req.session?.email === game.admin_email || req.session?.role === 'admin';
 
     res.json({
       success: true,
-      game: { ...game, invite_code: isAdmin ? game.invite_code : undefined },
-      standings: playersResult.rows
+      game: redactGame(req, game),
+      standings: redactPlayerEmails(req, game, playersResult.rows)
     });
   } catch (error) {
     console.error('Error fetching standings:', error);
@@ -392,7 +394,8 @@ router.get('/:id/history', requireAuth, async (req, res) => {
           pick_id: row.pick_id,
           player_id: row.player_id,
           username: row.username,
-          user_email: row.user_email,
+          user_email: isGameAdmin ? row.user_email : undefined,
+          is_me: isOwnPick,
           team_name: row.team_name,
           team_short: row.team_short,
           result: row.result,
@@ -403,7 +406,8 @@ router.get('/:id/history', requireAuth, async (req, res) => {
           pick_id: row.pick_id,
           player_id: row.player_id,
           username: row.username,
-          user_email: row.user_email,
+          user_email: isGameAdmin ? row.user_email : undefined,
+          is_me: isOwnPick,
           team_name: null,
           team_short: null,
           result: null,

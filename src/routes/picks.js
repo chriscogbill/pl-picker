@@ -3,6 +3,7 @@ const router = express.Router({ mergeParams: true });
 const pool = require('../db/connection');
 const { requireAuth, requireAdmin } = require('../middleware/requireAuth');
 const { getCurrentSeason, getCurrentGameweek, getGameweekOverride, isDeadlineOverridden, autoDetectGameweek } = require('../helpers/settings');
+const { redactPlayerEmails } = require('../helpers/privacy');
 
 // GET /api/games/:id/my-picks - Get my picks in this game
 router.get('/my-picks', requireAuth, async (req, res) => {
@@ -85,11 +86,13 @@ router.get('/picks/:gameweek', requireAuth, async (req, res) => {
       [gameId, gameweek]
     );
 
+    const gameResult = await pool.query('SELECT admin_email FROM games WHERE game_id = $1', [gameId]);
+
     res.json({
       success: true,
       gameweek: parseInt(gameweek),
       deadlinePassed: true,
-      picks: result.rows
+      picks: redactPlayerEmails(req, gameResult.rows[0] || {}, result.rows)
     });
   } catch (error) {
     console.error('Error fetching gameweek picks:', error);
