@@ -2,12 +2,16 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { api } from './api';
+import { retryUntilAnswered } from './sessionLookup';
+import AuthUnavailable from '../components/AuthUnavailable';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  // True when the session check got no answer (not the same as signed out).
+  const [authUnavailable, setAuthUnavailable] = useState(false);
   const [currentSeason, setCurrentSeason] = useState(null);
   const [currentGameweek, setCurrentGameweek] = useState(null);
 
@@ -15,12 +19,24 @@ export function AuthProvider({ children }) {
     initializeApp();
   }, []);
 
+  // While the session check can't get an answer, keep asking in the
+  // background and bring the app back as soon as it does.
+  useEffect(() => {
+    if (!authUnavailable) return;
+    return retryUntilAnswered(() => api.lookupSession(), applySession);
+  }, [authUnavailable]);
+
+  function applySession(session) {
+    setAuthUnavailable(session.kind === 'unavailable');
+    setUser(session.kind === 'ok' ? session.user : null);
+  }
+
   async function initializeApp() {
     try {
-      const [seasonData, gameweekData, authResponse] = await Promise.allSettled([
+      const [seasonData, gameweekData, session] = await Promise.allSettled([
         api.getCurrentSeason(),
         api.getCurrentGameweek(),
-        api.getCurrentUser()
+        api.lookupSession()
       ]);
 
       if (seasonData.status === 'fulfilled') {
@@ -35,11 +51,8 @@ export function AuthProvider({ children }) {
         setCurrentGameweek(1);
       }
 
-      if (authResponse.status === 'fulfilled') {
-        setUser(authResponse.value.user);
-      } else {
-        setUser(null);
-      }
+      // lookupSession never rejects; "unavailable" is its answer for a failed check.
+      applySession(session.status === 'fulfilled' ? session.value : { kind: 'unavailable' });
     } catch (error) {
       console.error('Error initializing app:', error);
       setCurrentSeason(new Date().getFullYear());
@@ -80,7 +93,7 @@ export function AuthProvider({ children }) {
       user, loading, register, changePassword, logout,
       currentSeason, currentGameweek, refreshGameweek
     }}>
-      {children}
+      {authUnavailable ? <AuthUnavailable /> : children}
     </AuthContext.Provider>
   );
 }

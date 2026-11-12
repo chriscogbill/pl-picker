@@ -1,3 +1,5 @@
+import { lookupSession } from './sessionLookup';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003';
 const AUTH_LOGIN_URL = process.env.NEXT_PUBLIC_AUTH_LOGIN_URL || 'https://auth.cogs.tech/login';
 // Register and forgot-password call cogs-auth directly so its per-IP rate limits
@@ -43,8 +45,11 @@ class ApiClient {
     return this.request('/api/auth/logout', { method: 'POST' });
   }
 
-  async getCurrentUser() {
-    return this.request('/api/auth/me');
+  // Resolves to { kind: 'ok', user } | { kind: 'anonymous' } |
+  // { kind: 'unavailable', reason }. Never throws: a failed check is retried
+  // and then reported as "unavailable", which is not the same as signed out.
+  lookupSession() {
+    return lookupSession(`${API_BASE_URL}/api/auth/me`);
   }
 
 
